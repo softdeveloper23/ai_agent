@@ -78,7 +78,7 @@ def get_weather(city: str) -> str:
         if response.status_code == 200:
             data = response.json()
 
-            print("\nGrabbing the weather data...\n")
+            print("\nAssistant: Grabbing the weather data...\n")
             
             # Extract relevant weather information
             temp = data['main']['temp']
@@ -130,15 +130,17 @@ def main():
         
         # Create the agent
         agent_executor = create_react_agent(model, tools)
+
+        user_name = input("\nAssistant: Hi! What is your name? ")
         
-        print("\nWelcome! I'm your AI assistant. Type 'help' for available commands or 'quit' to exit.")
+        print(f"\nAssistant: Welcome {user_name}! I'm your AI assistant. Type 'help' for available commands or 'quit' to exit.")
         
         while True:
             try:
                 user_input = input("\nYou: ").strip()
                 
                 if user_input.lower() == "quit":
-                    print("\nAI: Goodbye! Have a great day!")
+                    print(f"\nAssistant: Goodbye {user_name}! Have a great day!")
                     break
                 elif user_input.lower() == "help":
                     show_help()
@@ -163,7 +165,7 @@ def main():
                 print()
                 
             except KeyboardInterrupt:
-                print("\n\nAI: Goodbye! Have a great day!")
+                print(f"\n\nAssistant: Goodbye {user_name}! Have a great day!\n")
                 break
             except Exception as e:
                 print(f"\nError: {str(e)}")
