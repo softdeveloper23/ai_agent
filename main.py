@@ -5,9 +5,16 @@ from langgraph.prebuilt import create_react_agent
 from dotenv import load_dotenv
 import sys
 from datetime import datetime
+import requests
+import os
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Get API key from environment variables
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
+if not OPENWEATHER_API_KEY:
+    print("Warning: OPENWEATHER_API_KEY not found in environment variables.")
 
 @tool
 def calculator(operation: str, a: float, b: float) -> str:
@@ -22,6 +29,8 @@ def calculator(operation: str, a: float, b: float) -> str:
         str: The result of the calculation
     """
     try:
+        print("Attempting to perform calculation...\n")
+
         if operation.lower() == 'add':
             result = a + b
             return f"The sum of {a} and {b} is {result}"
@@ -43,7 +52,7 @@ def calculator(operation: str, a: float, b: float) -> str:
 
 @tool
 def get_weather(city: str) -> str:
-    """Get current weather information for a city.
+    """Get current weather information for a city using OpenWeatherMap API.
     
     Args:
         city (str): The name of the city to get weather for
@@ -51,24 +60,53 @@ def get_weather(city: str) -> str:
     Returns:
         str: Weather information for the city
     """
-    # This is a mock implementation - in a real app, you would call a weather API
-    current_time = datetime.now().strftime("%I:%M %p")
-    weather_data = {
-        "New York": {"temp": 72, "condition": "sunny", "humidity": 65},
-        "London": {"temp": 60, "condition": "cloudy", "humidity": 80},
-        "Tokyo": {"temp": 75, "condition": "clear", "humidity": 70},
-        "Sydney": {"temp": 68, "condition": "partly cloudy", "humidity": 75},
-        "Paris": {"temp": 65, "condition": "rainy", "humidity": 85}
-    }
+    if not OPENWEATHER_API_KEY:
+        return "Error: OpenWeatherMap API key not found. Please set OPENWEATHER_API_KEY in your .env file."
     
-    if city not in weather_data:
-        return f"Sorry, I don't have weather data for {city}. Try one of these cities: {', '.join(weather_data.keys())}"
-    
-    data = weather_data[city]
-    return f"Current weather in {city} ({current_time}):\n" \
-           f"Temperature: {data['temp']}°F\n" \
-           f"Condition: {data['condition']}\n" \
-           f"Humidity: {data['humidity']}%"
+    try:
+        print("Attempting to get weather data...")
+        # Make API request to OpenWeatherMap
+        base_url = "http://api.openweathermap.org/data/2.5/weather"
+        params = {
+            'q': city,
+            'appid': OPENWEATHER_API_KEY,
+            'units': 'imperial'  # Use Fahrenheit for temperature
+        }
+        
+        response = requests.get(base_url, params=params)
+        
+        if response.status_code == 200:
+            data = response.json()
+
+            print("\nGrabbing the weather data...\n")
+            
+            # Extract relevant weather information
+            temp = data['main']['temp']
+            feels_like = data['main']['feels_like']
+            humidity = data['main']['humidity']
+            description = data['weather'][0]['description']
+            wind_speed = data['wind']['speed']
+            
+            # Format the response
+            current_time = datetime.now().strftime("%I:%M %p")
+            return f"Current weather in {city} ({current_time}):\n" \
+                   f"Temperature: {temp:.1f}°F (Feels like: {feels_like:.1f}°F)\n" \
+                   f"Condition: {description.capitalize()}\n" \
+                   f"Humidity: {humidity}%\n" \
+                   f"Wind Speed: {wind_speed} mph"
+        else:
+            return f"Error: Weather API returned status code {response.status_code}. Please try again later."
+               
+    except requests.exceptions.ConnectionError:
+        return "Error: Could not connect to the weather service. Please check your internet connection."
+    except requests.exceptions.Timeout:
+        return "Error: The weather service request timed out. Please try again."
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching weather data: {str(e)}"
+    except KeyError as e:
+        return f"Error: Unexpected response format from weather service. Missing data: {str(e)}"
+    except Exception as e:
+        return f"An unexpected error occurred: {str(e)}"
 
 def show_help():
     """Display available commands and tools."""
@@ -93,7 +131,7 @@ def main():
         # Create the agent
         agent_executor = create_react_agent(model, tools)
         
-        print("Welcome! I'm your AI assistant. Type 'help' for available commands or 'quit' to exit.")
+        print("\nWelcome! I'm your AI assistant. Type 'help' for available commands or 'quit' to exit.")
         
         while True:
             try:
