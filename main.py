@@ -8,7 +8,8 @@ load_dotenv()
 
 @tool
 def calculator(a: float, b: float) -> str:
-    ...
+    """Useful for performing basic arithmetic calculations with numbers"""
+    return f"The sum of {a} and {b} is {a + b}"
 
 def main():
     model = ChatOpenAI(temperature=0)
