@@ -20,7 +20,7 @@ def main():
         user_input = input("\nYou: ").strip()
 
         if user_input.lower() == "quit":
-            print("AI: Goodbye!")
+            print("\nAI: Goodbye!")
             break
 
         print("\nAssistant: ", end="")
